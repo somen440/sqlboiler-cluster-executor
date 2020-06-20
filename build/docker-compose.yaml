@@ -1,0 +1,56 @@
+version: "3.7"
+services:
+  db:
+    image: mysql:5.7
+    ports:
+      - 3312:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-writer/conf.d:/etc/mysql/conf.d
+      - ./mysql-writer/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+      - ../logs/mysql:/var/log/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: writer-user
+      MYSQL_PASSWORD: writer-password
+      MYSQL_DATABASE: sample
+      TZ: Asia/Tokyo
+      MYSQL_REPLICATION_USER: reader-user
+      MYSQL_REPLICATION_PASSWORD: reader-password
+    networks:
+      - backend
+
+  db-reader:
+    image: mysql:5.7
+    ports:
+      - 3313:3306
+    volumes:
+      - ./mysql-reader/conf.d:/etc/mysql/conf.d
+      - ./mysql-reader/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+      - ../logs/mysql:/var/log/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Tokyo
+      MYSQL_REPLICATION_HOST: db
+      MYSQL_REPLICATION_USER: reader-user
+      MYSQL_REPLICATION_PASSWORD: reader-password
+    networks:
+      - backend
+
+  wait:
+    image: jwilder/dockerize
+    command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "30s"]
+    networks:
+      - backend
+
+  wait-reader:
+    image: jwilder/dockerize
+    command: ["dockerize", "-wait", "tcp://db-reader:3306", "-timeout", "30s"]
+    networks:
+      - backend
+
+volumes:
+  mysql_data:
+
+networks:
+  backend:
