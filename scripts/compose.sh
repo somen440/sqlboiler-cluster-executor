@@ -52,4 +52,9 @@ function ps() {
     sh -c "${DM} ps"
 }
 
+function exec() {
+    echo $DM exec
+    sh -c "${DM} exec db mysql -uroot -p"
+}
+
 $1 $2
